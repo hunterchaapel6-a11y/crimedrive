@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Crime Drive — a retro top-down city driving game playable right in your browser.">
+<meta name="theme-color" content="#07070c">
+<title>Crime Drive — Play in Your Browser</title>
+<style>
+  :root{
+    --bg:#07070c;
+    --panel:#101420;
+    --panel-hi:#1b2131;
+    --neon:#3ff2e0;
+    --pink:#ff3d81;
+    --amber:#ffb020;
+    --text:#e9f2ff;
+    --dim:#7c8aa3;
+    --line:#222a3a;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    min-height:100vh;
+    color:var(--text);
+    background:
+      radial-gradient(circle at 20% 10%, rgba(63,242,224,.08), transparent 28%),
+      radial-gradient(circle at 85% 15%, rgba(255,61,129,.08), transparent 28%),
+      linear-gradient(180deg,#090a10 0%,var(--bg) 55%,#050509 100%);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0; pointer-events:none; opacity:.08;
+    background-image:linear-gradient(rgba(255,255,255,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.18) 1px,transparent 1px);
+    background-size:32px 32px;
+    mask-image:linear-gradient(to bottom,black,transparent 75%);
+  }
+  .wrap{width:min(1180px,calc(100% - 28px)); margin:0 auto}
+  header{
+    min-height:88vh; display:flex; align-items:center; padding:48px 0 34px;
+  }
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:34px;align-items:center;width:100%}
+  .eyebrow{font-size:12px;letter-spacing:4px;color:var(--neon);margin-bottom:16px}
+  h1{font-size:clamp(48px,9vw,94px);line-height:.88;margin:0 0 18px;letter-spacing:-4px;color:#fff;text-shadow:4px 4px 0 #1a2030}
+  h1 span{display:block;color:var(--pink);text-shadow:4px 4px 0 #28121c}
+  .tagline{font-size:15px;line-height:1.7;max-width:620px;color:#c4cedf}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 18px}
+  button,.button{
+    border:0; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+    min-height:46px; padding:0 18px; font:700 12px inherit; letter-spacing:1px; text-transform:uppercase;
+    background:var(--neon); color:#081015; box-shadow:4px 4px 0 #152d31; transition:transform .12s,filter .12s,box-shadow .12s;
+  }
+  button:hover,.button:hover{transform:translate(-2px,-2px);filter:brightness(1.06);box-shadow:6px 6px 0 #152d31}
+  .button.alt{background:transparent;color:var(--text);border:1px solid #3a4457;box-shadow:4px 4px 0 #171c27}
+  .hint{color:var(--dim);font-size:11px;line-height:1.6}
+  .hero-card{background:rgba(16,20,32,.82);border:1px solid #242d3d;padding:14px;box-shadow:0 18px 60px rgba(0,0,0,.45)}
+  .game-preview{position:relative;aspect-ratio:16/10;background:#05070a;overflow:hidden;border:1px solid #313a4d}
+  .game-preview::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,transparent 0 48%,rgba(63,242,224,.06) 48% 49%,transparent 49% 100%)}
+  .preview-grid{position:absolute;inset:0;background:linear-gradient(90deg,rgba(63,242,224,.12) 1px,transparent 1px),linear-gradient(rgba(255,61,129,.12) 1px,transparent 1px);background-size:44px 44px;transform:perspective(400px) rotateX(48deg) scale(1.4);transform-origin:center 70%}
+  .preview-car{position:absolute;width:86px;height:40px;left:50%;top:52%;transform:translate(-50%,-50%) rotate(-18deg);background:#d8dee8;border:4px solid #232936;box-shadow:0 0 22px rgba(63,242,224,.38)}
+  .preview-car::before,.preview-car::after{content:"";position:absolute;width:18px;height:8px;top:12px;background:#ffefbe}
+  .preview-car::before{right:-23px}.preview-car::after{left:-23px}
+  .preview-lights{position:absolute;left:52%;top:46%;width:180px;height:120px;transform:rotate(-18deg);background:radial-gradient(ellipse at 10% 50%,rgba(255,243,190,.42),rgba(255,243,190,0) 66%);filter:blur(4px);pointer-events:none}
+  .preview-ui{position:absolute;left:14px;top:12px;font-size:10px;color:var(--neon);letter-spacing:1px}
+  .preview-stars{position:absolute;right:14px;top:12px;color:var(--pink);font-size:11px}
+
+  section{padding:42px 0}
+  .section-title{font-size:13px;letter-spacing:3px;color:var(--neon);margin:0 0 16px}
+  .section-copy{color:#aeb8ca;line-height:1.75;font-size:13px;max-width:760px}
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+  .feature{background:rgba(16,20,32,.7);border:1px solid var(--line);padding:18px;min-height:150px}
+  .feature b{display:block;color:#fff;margin-bottom:9px;font-size:13px}
+  .feature p{margin:0;color:#8f9bb0;font-size:12px;line-height:1.7}
+  .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:22px}
+  .key{background:#0d111b;border:1px solid #2a3345;padding:14px}
+  .key strong{display:block;color:#fff;font-size:12px;margin-bottom:7px}
+  .key span{color:var(--dim);font-size:11px;line-height:1.5}
+
+  #play{padding:34px 0 72px}
+  .play-shell{background:#030408;border:1px solid #283144;box-shadow:0 24px 80px rgba(0,0,0,.55);padding:12px}
+  .play-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+  .play-label{font-size:11px;letter-spacing:2px;color:var(--neon)}
+  .toolbar-actions{display:flex;gap:8px}
+  .small-btn{min-height:34px;padding:0 12px;font-size:10px}
+  .game-frame{position:relative;width:100%;aspect-ratio:16/9;background:#07070c;overflow:hidden}
+  iframe{width:100%;height:100%;display:block;border:0;background:#07070c}
+  .frame-note{padding:9px 2px 0;color:#66738a;font-size:10px}
+  footer{padding:32px 0 44px;border-top:1px solid #171d29;color:#66738a;font-size:10px;text-align:center}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#101420;border:1px solid #354157;padding:12px 14px;color:#cfd8e8;font-size:11px;transition:.2s;z-index:20}
+  .toast.show{transform:translate(-50%,0);opacity:1}
+  .fullscreen #play{position:fixed;inset:0;z-index:30;background:#000;padding:0;display:flex;align-items:stretch}
+  .fullscreen .wrap{width:100%;max-width:none;height:100%}
+  .fullscreen .play-shell{border:0;padding:0;height:100%;display:flex;flex-direction:column}
+  .fullscreen .play-toolbar{padding:8px 10px;margin:0;background:#0a0c12}
+  .fullscreen .game-frame{flex:1;aspect-ratio:auto}
+  .fullscreen .frame-note{display:none}
+
+  @media (max-width: 860px){
+    .hero{grid-template-columns:1fr}
+    header{min-height:auto;padding-top:34px}
+    .features{grid-template-columns:1fr}
+    .controls{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width: 520px){
+    .wrap{width:min(100% - 18px,1180px)}
+    h1{font-size:56px;letter-spacing:-3px}
+    .controls{grid-template-columns:1fr}
+    .actions,.toolbar-actions{width:100%}
+    .actions .button,.actions button,.toolbar-actions button{flex:1}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <div class="eyebrow">RETRO CITY // BROWSER GAME</div>
+        <h1>CRIME<span>DRIVE</span></h1>
+        <p class="tagline">Hit the streets, take jobs, evade the cops, tune your ride, and carve your own route through a neon city built for fast top-down chaos.</p>
+        <div class="actions">
+          <a class="button" href="#play">PLAY NOW</a>
+          <a class="button alt" href="#controls">CONTROLS</a>
+        </div>
+        <div class="hint">No install required. The game runs directly in a modern desktop or mobile browser.</div>
+      </div>
+      <div class="hero-card" aria-hidden="true">
+        <div class="game-preview">
+          <div class="preview-grid"></div>
+          <div class="preview-lights"></div>
+          <div class="preview-car"></div>
+          <div class="preview-ui">CRIME DRIVE // CITY RUNNER</div>
+          <div class="preview-stars">★ ★ ★ ☆ ☆ ☆</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2 class="section-title">THE CITY IS YOURS</h2>
+    <p class="section-copy">Crime Drive is the browser-ready version of the game, using the same standalone game page as its playable core. The site simply gives players a dedicated front door, instructions, and a focused play area.</p>
+    <div class="features">
+      <article class="feature"><b>DRIVE</b><p>Race through a sprawling retro city with traffic, intersections, services, stores, and reactive police.</p></article>
+      <article class="feature"><b>CAUSE CHAOS</b><p>Commit crimes, build heat, fight to escape, and watch the pursuit tactics escalate as your wanted level rises.</p></article>
+      <article class="feature"><b>PLAY ANYWHERE</b><p>The site is static and host-friendly, so it can be served from GitHub Pages, Netlify, Vercel, or any basic web host.</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="controls">
+  <div class="wrap">
+    <h2 class="section-title">CONTROLS</h2>
+    <div class="controls">
+      <div class="key"><strong>WASD / ARROWS</strong><span>Drive</span></div>
+      <div class="key"><strong>SHIFT</strong><span>Handbrake</span></div>
+      <div class="key"><strong>F</strong><span>Boost</span></div>
+      <div class="key"><strong>SPACE</strong><span>Action</span></div>
+      <div class="key"><strong>MOUSE</strong><span>Aim / interact with cursor-based actions</span></div>
+      <div class="key"><strong>P / ESC</strong><span>Pause</span></div>
+      <div class="key"><strong>Q / E</strong><span>Wheel / cycle</span></div>
+      <div class="key"><strong>R / N / H</strong><span>Radio / mute / horn</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="play">
+  <div class="wrap">
+    <div class="play-toolbar">
+      <div class="play-label">PLAY CRIME DRIVE</div>
+      <div class="toolbar-actions">
+        <button class="small-btn" id="focusBtn">FOCUS GAME</button>
+        <button class="small-btn" id="fullBtn">FULL SCREEN</button>
+      </div>
+    </div>
+    <div class="play-shell">
+      <div class="game-frame" id="gameFrame">
+        <iframe id="game" src="CrimeDrive.html" title="Crime Drive game" allow="autoplay; fullscreen; gamepad" loading="eager"></iframe>
+      </div>
+      <div class="frame-note">Click the game once to activate audio. Keyboard controls are handled by the game itself.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  CRIME DRIVE · BROWSER EDITION
+</footer>
+
+<div class="toast" id="toast">Game focused</div>
+<script>
+  const iframe = document.getElementById('game');
+  const playSection = document.getElementById('play');
+  const fullBtn = document.getElementById('fullBtn');
+  const focusBtn = document.getElementById('focusBtn');
+  const toast = document.getElementById('toast');
+
+  function showToast(message){
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(showToast.t);
+    showToast.t = setTimeout(()=>toast.classList.remove('show'), 1300);
+  }
+  function focusGame(){
+    iframe.focus();
+    playSection.scrollIntoView({behavior:'smooth',block:'start'});
+    showToast('Game focused');
+  }
+  focusBtn.addEventListener('click', focusGame);
+
+  async function enterFullscreen(){
+    try{
+      if(document.fullscreenElement){ await document.exitFullscreen(); document.documentElement.classList.remove('fullscreen'); return; }
+      await document.documentElement.requestFullscreen();
+      document.documentElement.classList.add('fullscreen');
+      iframe.focus();
+    }catch(e){
+      document.documentElement.classList.toggle('fullscreen');
+      iframe.focus();
+    }
+  }
+  fullBtn.addEventListener('click', enterFullscreen);
+  document.addEventListener('fullscreenchange', ()=>{
+    if(!document.fullscreenElement) document.documentElement.classList.remove('fullscreen');
+    fullBtn.textContent = document.fullscreenElement ? 'EXIT FULL SCREEN' : 'FULL SCREEN';
+  });
+
+  // Clicking the game frame focuses the actual game canvas.
+  document.getElementById('gameFrame').addEventListener('click', ()=>iframe.focus());
+</script>
+</body>
+</html>
